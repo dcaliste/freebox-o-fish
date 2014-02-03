@@ -55,7 +55,7 @@ ApplicationWindow {
             header: Column {
                 PageHeader {
                     width: page.width
-                    title: "Box-o-fish"
+                    title: "(Free) Box-o-fish"
                     }
                 Label {
                     text: "Liste des appels"
