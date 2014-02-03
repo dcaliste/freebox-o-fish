@@ -151,7 +151,7 @@ ApplicationWindow {
             }
         }
 
-	/*Component.onCompleted: JS.getAppTokenStatus()*/
+	Component.onCompleted: JS.getAppTokenStatus()
     }
 
     CoverBackground {
