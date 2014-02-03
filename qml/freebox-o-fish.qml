@@ -52,7 +52,7 @@ ApplicationWindow {
 
         ListModel {
             id: callLog
-	    ListElement {
+	    /*ListElement {
 		number: "0233666597"
                 type: "outgoing"
 	    }
@@ -64,7 +64,7 @@ ApplicationWindow {
 	    ListElement {
 		number: "+84123456789"
 		type: "incoming"
-	    }
+	    }*/
         }
 
         SilicaListView {

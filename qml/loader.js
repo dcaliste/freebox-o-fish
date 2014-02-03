@@ -29,6 +29,7 @@ function load(method, url, sendObj, respFunc) {
             console.log(doc.status + " " + doc.statusText);
             //console.log(doc.responseText);
             if (doc.status == 200 && respFunc) {
+	        console.log(doc.responseText);
                 respFunc(eval("(" + doc.responseText + ")"));
             }
         }
@@ -93,7 +94,10 @@ function getAppTokenStatus() {
     }
     load("GET", url + "/api/v1/login/authorize/" + track_id, null,
          function(vals) {
-             app_token_status = vals["result"]["status"];
+	     if (!vals["success"] && vals["error_code"] == "denied_from_external_ip")
+		app_token_status = "granted";
+             else
+                app_token_status = vals["result"]["status"];
          });
 }
 
