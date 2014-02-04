@@ -22,6 +22,31 @@ function getDB() {
 }
 
 /* Database routines. */
+function setFavoriteURL() {
+    var db = getDB();
+    db.transaction(function(tx) {
+        // Create the database if it doesn't already exist
+        tx.executeSql('CREATE TABLE IF NOT EXISTS FavoriteURL(url TEXT)');
+        tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS IDX_URLS ON FavoriteURL(url)');
+        var rs = tx.executeSql('INSERT OR REPLACE INTO FavoriteURL VALUES (?)', [url]);
+    });
+}
+
+function getFavoriteURL() {
+    var favoriteURL = [];
+    var db = getDB();
+    db.transaction(function(tx) {
+        // Create the database if it doesn't already exist
+        tx.executeSql('CREATE TABLE IF NOT EXISTS FavoriteURL(url TEXT)');
+        var rs = tx.executeSql('SELECT url FROM FavoriteURL');
+        console.log("Found favorite urls" + rs.rows.length)
+        if (rs.rows.length > 0)
+            for (var i = 0; i < rs.rows.length; i++)
+                favoriteURL.push(rs.rows.item(i).url);
+    });
+    return favoriteURL;
+}
+
 function getAppToken() {
     // Variables coming from QML
     app_token = "";
@@ -57,13 +82,7 @@ function http(method, url, sendObj, respFunc) {
 
     doc.timeout = 15000;
     doc.onreadystatechange = function() {
-        if (doc.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
-            console.log("Headers -->");
-            console.log(doc.getAllResponseHeaders ());
-            console.log("Last modified -->");
-            console.log(doc.getResponseHeader ("Last-Modified"));
-
-        } else if (doc.readyState == XMLHttpRequest.DONE) {
+        if (doc.readyState == XMLHttpRequest.DONE) {
             console.log(doc.status + " " + doc.statusText);
             //console.log(doc.responseText);
             if (doc.status == 200 && respFunc) {
@@ -98,30 +117,32 @@ function requestAppTokenStatus() {
          });
 }
 
-
-function getAppTokenStatus() {
-    getAppToken();
-    console.log("App token status is " + app_token_status)
+function appTokenConnect() {
     app_token_status = "fetching"
-    if (track_id == 0) {
-        /* We have no token for this freebox_id, we ask for one. */
-        var obj = '{"app_id": "fr.freebox.box-o-fish", "app_name": "Box-o-Fish", "app_version": "0.1", "device_name": "Jolla"}';
-        http("POST", "http://" + url + "/api/v1/login/authorize", obj,
-             function(vals) {
-                 /* Save returned token. */
-                 if (!vals["success"] && vals["error_code"] == "denied_from_external_ip") {
-                     app_token_status = "denied_from_external_ip";
-                     return;
-                 } else if (!vals["success"] || vals["result"]["track_id"] == 0) {
-                     app_token_status = "error";
-                     return;
-                 }
-                 setAppToken(vals);
-                 requestAppTokenStatus();
-             });
-        return;
-    }
-    requestAppTokenStatus();
+    http("GET", "http://" + url + "/api_version", null,
+         function(vals) {
+             freebox_id = vals["uid"];
+             getAppToken();
+             if (track_id == 0) {
+                 /* We have no token for this freebox_id, we ask for one. */
+                 var obj = '{"app_id": "fr.freebox.box-o-fish", "app_name": "Box-o-Fish", "app_version": "0.1", "device_name": "Jolla"}';
+                 http("POST", "http://" + url + "/api/v1/login/authorize", obj,
+                      function(vals) {
+                          /* Save returned token. */
+                          if (!vals["success"] && vals["error_code"] == "denied_from_external_ip") {
+                              app_token_status = "denied_from_external_ip";
+                              return;
+                          } else if (!vals["success"] || vals["result"]["track_id"] == 0) {
+                              app_token_status = "error";
+                              return;
+                          }
+                          setAppToken(vals);
+                          requestAppTokenStatus();
+                      });
+                 return;
+             }
+             requestAppTokenStatus();
+         });
 }
 
 function appTokenIsError() {
@@ -135,8 +156,8 @@ function appTokenErrorMessage() {
     if (app_token_status == "error")
         return "Erreur casse-pieds"
     else if (app_token_status == "denied_from_external_ip")
-        return "Impossible d'autoriser l'application depuis une connexion" +
-        " internet différente de celle de la Freebox."
+        return "L'application n'est pas encore autoriser à se connecter à la" +
+        " Freebox. Vous devez être sur votre réseau local pour exécuter cette action."
     else if (app_token_status == "timeout")
         return "Le délai pour accepter ou rejeter l'application sur la façade" +
         " du serveur Freebox est dépassé. Veuillez réessayer."

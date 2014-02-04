@@ -24,7 +24,7 @@ ApplicationWindow {
     initialPage: page
     cover: cover
 
-    property string freebox_id: "Vinéa"
+    property string freebox_id: ""
     property alias url: urlInput.text
 
     /* Can be:
@@ -64,29 +64,41 @@ ApplicationWindow {
                 title: "(Free) Box-o-fish"
             }
             Row {
+                id: urlLine
                 width: parent.width
                 TextField {
                     id: urlInput
-                    width: parent.width - fav.width
+                    width: parent.width - favButton.width
                     label: "Adresse de la Freebox"
-	            text: "88.167.68.163" /*"mafreebox.freebox.fr"*/
+	            text: "mafreebox.freebox.fr"
 		    anchors.verticalCenter: parent.verticalCenter
-                    /*onTextChanged: { app_token = ""
-                      track_id = 0
-                      app_token_status = "unknown" }*/
+                    inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoPrediction
+                    enabled: (app_token_status == "unknown" || JS.appTokenIsError())
                 }
 	        IconButton {
-		    id: fav
+		    id: favButton
 		    icon.source: (down)?"image://theme/icon-m-favorite-selected":"image://theme/icon-m-favorite"
 		    anchors.verticalCenter: parent.verticalCenter
+                    onClicked: favList.show(grid)
 	        }
+            }
+            ContextMenu {
+                id: favList
+                Repeater {
+                    model: JS.getFavoriteURL()
+
+                    MenuItem {
+                        text: modelData
+                        onClicked: url = text
+                    }
+                }
             }
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "se connecter"
                 enabled: (app_token_status == "unknown" || JS.appTokenIsError())
                 visible: (session_token.length == 0)
-                onClicked: JS.getAppTokenStatus()
+                onClicked: JS.appTokenConnect()
             }
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -144,10 +156,10 @@ ApplicationWindow {
 
 	    BusyIndicator {
 	   	id: busy
-                visible: (session_token.length == 0 &&
-                          (app_token_status == "fetching" ||
-                           app_token_status == "pending" ||
-                           app_token_status == "granted"))
+                visible: ((session_token.length == 0 &&
+                           (app_token_status == "pending" ||
+                            app_token_status == "granted")) ||
+                          app_token_status == "fetching")
                 running: visible
                 size: BusyIndicatorSize.Large
                 anchors.verticalCenter: parent.verticalCenter
@@ -178,5 +190,5 @@ ApplicationWindow {
         id: cover
     }
 
-    onApp_token_statusChanged: if (app_token_status == "granted") JS.getSessionToken()
+    onApp_token_statusChanged: if (app_token_status == "granted") {JS.setFavoriteURL(); JS.getSessionToken()}
 }
