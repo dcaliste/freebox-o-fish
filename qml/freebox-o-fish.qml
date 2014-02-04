@@ -139,6 +139,11 @@ ApplicationWindow {
             }
         }
 
+        Component {
+            id: aboutPage
+            About { }
+        }
+
         SilicaGridView {
             id: grid
             model: actions
@@ -153,6 +158,13 @@ ApplicationWindow {
 
             cellWidth: parent.width / 3
             cellHeight: cellWidth
+
+	    PullDownMenu {
+	        MenuItem {
+		    text: "À propos"
+		    onClicked: pageStack.push(aboutPage)
+	        }
+	    }
 
 	    BusyIndicator {
 	   	id: busy

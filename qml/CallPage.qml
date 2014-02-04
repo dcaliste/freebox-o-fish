@@ -26,6 +26,7 @@ Page {
     id: page
     anchors.fill: parent
 
+    /* These lines are copied from voice-ui-jolla. */
     Person {
         id: temporaryPerson
     }
@@ -40,6 +41,7 @@ Page {
         }
         pageStack.push(contactCardPageComponent, { 'contact': (person ? person : temporaryPerson) })
     }
+    /* End of voice-ui-jolla. */
 
     PeopleModel {
 	id: people
