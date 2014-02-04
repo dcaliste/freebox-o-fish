@@ -19,11 +19,27 @@ import QtQuick 2.0
 import QtQuick.LocalStorage 2.0
 import "loader.js" as JS
 import Sailfish.Silica 1.0
+import Sailfish.Contacts 1.0
 import org.nemomobile.contacts 1.0
     
 Page {
     id: page
     anchors.fill: parent
+
+    Person {
+        id: temporaryPerson
+    }
+    Component {
+        id: contactCardPageComponent
+        TemporaryContactCardPage {}
+    }
+
+    function openContactCard(person, remoteUid) {
+        if (!person) {
+            temporaryPerson.phoneNumbers = [ remoteUid ]
+        }
+        pageStack.push(contactCardPageComponent, { 'contact': (person ? person : temporaryPerson) })
+    }
 
     PeopleModel {
 	id: people
@@ -51,14 +67,9 @@ Page {
 
     SilicaListView {
         id: call_list
-        header: Column {
-            PageHeader {
+        header: PageHeader {
                 width: page.width
-                title: "(Free) Box-o-fish"
-            }
-            Label {
-                text: "Liste des appels"
-            }
+                title: "Liste des appels"
         }
 
         model: callLog
@@ -73,6 +84,15 @@ Page {
                 text: section
                 height: Theme.itemSizeExtraSmall
             }
+        }
+
+	BusyIndicator {
+	    id: busy
+            visible: (callLog.count == 0)
+            running: visible
+            size: BusyIndicatorSize.Large
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.horizontalCenter: parent.horizontalCenter
         }
 
         delegate: ListItem {
@@ -113,6 +133,7 @@ Page {
                 font.pixelSize: Theme.fontSizeExtraSmall
                 text: Qt.formatDateTime(new Date(model.datetime * 1000), "le dd/MM à hh:mm")
             }
+            onClicked: if (model.number) openContactCard(contact, model.number)
         }
 	VerticalScrollDecorator { flickable: call_list }
     }
