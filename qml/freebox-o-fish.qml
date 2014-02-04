@@ -69,7 +69,7 @@ ApplicationWindow {
                     id: urlInput
                     width: parent.width - fav.width
                     label: "Adresse de la Freebox"
-	            text: "mafreebox.freebox.fr" /*"88.167.68.163"*/ /*"mafreebox.freebox.fr"*/
+	            text: "88.167.68.163" /*"mafreebox.freebox.fr"*/
 		    anchors.verticalCenter: parent.verticalCenter
                     /*onTextChanged: { app_token = ""
                       track_id = 0
@@ -117,6 +117,13 @@ ApplicationWindow {
                 label: "Appels"
                 iconSource: "image://theme/icon-l-answer"
                 page: "callPage"
+                implemented: true
+            }
+            ListElement {
+                label: "Contacts"
+                iconSource: "image://theme/icon-l-people"
+                page: "contactPage"
+                implemented: false
             }
         }
 
@@ -150,7 +157,7 @@ ApplicationWindow {
             delegate: BackgroundItem {
                 width: grid.cellWidth
                 height: grid.cellHeight
-                enabled: (session_token.length > 0)
+                enabled: (session_token.length > 0 && implemented)
                 opacity: (enabled)?1:0.33
                 Image {
                     source: iconSource
@@ -162,7 +169,7 @@ ApplicationWindow {
                     anchors.bottom: parent.bottom
                     font.pixelSize: Theme.fontSizeSmall
                 }
-                onClicked:  pageStack.push((model.page == "callPage")?callPage:null)
+                onClicked:  pageStack.push(eval(model.page))
             }
         }
     }
