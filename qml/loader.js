@@ -15,43 +15,13 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-function load(method, url, sendObj, respFunc) {
-    var doc = new XMLHttpRequest();
-
-    doc.onreadystatechange = function() {
-        if (doc.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
-            console.log("Headers -->");
-            console.log(doc.getAllResponseHeaders ());
-            console.log("Last modified -->");
-            console.log(doc.getResponseHeader ("Last-Modified"));
-
-        } else if (doc.readyState == XMLHttpRequest.DONE) {
-            console.log(doc.status + " " + doc.statusText);
-            //console.log(doc.responseText);
-            if (doc.status == 200 && respFunc) {
-	        console.log(doc.responseText);
-                respFunc(eval("(" + doc.responseText + ")"));
-            }
-        }
-    }
-
-    console.log(method + url);
-    doc.open(method, url);
-    if (session_token.length > 0)
-        doc.setRequestHeader("X-Fbx-App-Auth", session_token);
-    if (sendObj)
-        doc.send(sendObj);
-    else
-        doc.send();
-    console.log(sendObj);
-}
-
 function getDB() {
     var db = LocalStorage.openDatabaseSync("box-o-fish", "0.1",
                                            "Local storage for Box-o-Fish", 10000);
     return db;
 }
 
+/* Database routines. */
 function getAppToken() {
     // Variables coming from QML
     app_token = "";
@@ -67,7 +37,6 @@ function getAppToken() {
         }
     });
 }
-
 function setAppToken(vals) {
     var db = getDB();
     console.log("Set app_token" + vals)
@@ -77,28 +46,106 @@ function setAppToken(vals) {
         tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS id_index ON Freebox(id)');
         var rs = tx.executeSql('INSERT INTO Freebox VALUES (?, ?, ?)', [freebox_id, vals["result"]["app_token"], vals["result"]["track_id"]]);
     });
-    getAppTokenStatus();
+    app_token = vals["result"]["app_token"];
+    track_id  = vals["result"]["track_id"];
 }
-function authorizeAppToken() {
-    var obj = '{"app_id": "fr.freebox.box-o-fish", "app_name": "Box-o-Fish", "app_version": "0.1", "device_name": "Jolla"}';
-    console.log("Post authorization request");
-    load("POST", url + "/api/v1/login/authorize", obj, setAppToken);
+
+
+/* HTTP routines. */
+function http(method, url, sendObj, respFunc) {
+    var doc = new XMLHttpRequest();
+
+    doc.timeout = 15000;
+    doc.onreadystatechange = function() {
+        if (doc.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
+            console.log("Headers -->");
+            console.log(doc.getAllResponseHeaders ());
+            console.log("Last modified -->");
+            console.log(doc.getResponseHeader ("Last-Modified"));
+
+        } else if (doc.readyState == XMLHttpRequest.DONE) {
+            console.log(doc.status + " " + doc.statusText);
+            //console.log(doc.responseText);
+            if (doc.status == 200 && respFunc) {
+	        console.log(doc.responseText);
+                respFunc(eval("(" + doc.responseText + ")"));
+            } else if (respFunc) {
+                respFunc({"success": false, "error_code": doc.status})
+            }
+        }
+    }
+
+    console.log(method + url);
+    doc.open(method, url);
+    if (session_token.length > 0)
+        doc.setRequestHeader("X-Fbx-App-Auth", session_token);
+    if (sendObj)
+        doc.send(sendObj);
+    else
+        doc.send();
+    console.log(sendObj);
 }
+
+function requestAppTokenStatus() {
+    http("GET", "http://" + url + "/api/v1/login/authorize/" + track_id, null,
+         function(vals) {
+	     if (!vals["success"] && vals["error_code"] == "denied_from_external_ip")
+		 app_token_status = "granted";
+             else if (vals["success"])
+                 app_token_status = vals["result"]["status"];
+             else
+                 app_token_status = "error"
+         });
+}
+
 
 function getAppTokenStatus() {
     getAppToken();
     console.log("App token status is " + app_token_status)
+    app_token_status = "fetching"
     if (track_id == 0) {
-        app_token_status = "unknown"
+        /* We have no token for this freebox_id, we ask for one. */
+        var obj = '{"app_id": "fr.freebox.box-o-fish", "app_name": "Box-o-Fish", "app_version": "0.1", "device_name": "Jolla"}';
+        http("POST", "http://" + url + "/api/v1/login/authorize", obj,
+             function(vals) {
+                 /* Save returned token. */
+                 if (!vals["success"] && vals["error_code"] == "denied_from_external_ip") {
+                     app_token_status = "denied_from_external_ip";
+                     return;
+                 } else if (!vals["success"] || vals["result"]["track_id"] == 0) {
+                     app_token_status = "error";
+                     return;
+                 }
+                 setAppToken(vals);
+                 requestAppTokenStatus();
+             });
         return;
     }
-    load("GET", url + "/api/v1/login/authorize/" + track_id, null,
-         function(vals) {
-	     if (!vals["success"] && vals["error_code"] == "denied_from_external_ip")
-		app_token_status = "granted";
-             else
-                app_token_status = vals["result"]["status"];
-         });
+    requestAppTokenStatus();
+}
+
+function appTokenIsError() {
+    return (app_token_status == "error" ||
+            app_token_status == "denied_from_external_ip" ||
+            app_token_status == "timeout" ||
+            app_token_status == "denied")
+}
+
+function appTokenErrorMessage() {
+    if (app_token_status == "error")
+        return "Erreur casse-pieds"
+    else if (app_token_status == "denied_from_external_ip")
+        return "Impossible d'autoriser l'application depuis une connexion" +
+        " internet différente de celle de la Freebox."
+    else if (app_token_status == "timeout")
+        return "Le délai pour accepter ou rejeter l'application sur la façade" +
+        " du serveur Freebox est dépassé. Veuillez réessayer."
+    else if (app_token_status == "denied")
+        return "L'application a été refusée par le serveur Freebox. Veuillez" +
+        " d'abord vous connecter à votre interfaçe Freebox pour supprimer" +
+        " l'interdiction de connexion."
+    else
+        return ""
 }
 
 /*
@@ -127,12 +174,12 @@ this._hasher;e=d.finalize(e);d.reset();return d.finalize(this._oKey.clone().conc
 /* End of CryptoJS. */
 
 function getSessionToken() {
-    load("GET", url + "/api/v1/login", null,
+    http("GET", "http://" + url + "/api/v1/login", null,
          function (vals) {
              console.log(vals["result"]["challenge"]);
              var passwd = CryptoJS.HmacSHA1(vals["result"]["challenge"], app_token);
              var obj = '{"app_id": "fr.freebox.box-o-fish", "password": "' + passwd + '"}';
-             load("POST", url + "/api/v1/login/session", obj,
+             http("POST", "http://" + url + "/api/v1/login/session", obj,
                   function(vals) {
                       if (vals["success"]) {
                           session_token = vals["result"]["session_token"];
@@ -145,15 +192,17 @@ function getSessionToken() {
 function logout() {
     if (session_token.length ==0)
         return;
-    load("POST", url + "/api/v1/login/logout/", null,
+    app_token_status = "fetching"
+    http("POST", "http://" + url + "/api/v1/login/logout/", null,
          function (vals) {
              session_token = "";
+             app_token_status = "unknown";
          });
 }
 
 function getCallLog(model) {
     model.clear()
-    load("GET", url + "/api/v1/call/log/", null,
+    http("GET", "http://" + url + "/api/v1/call/log/", null,
          function (vals) {
              if (vals["success"])
                  for (var i = 0; i < vals["result"].length; i++) {
