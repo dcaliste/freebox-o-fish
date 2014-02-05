@@ -31,6 +31,10 @@ Page {
 
         spacing: Theme.paddingLarge
 
+        Image {
+            source: Qt.resolvedUrl("../about-freebox-o-fish.png")
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "(Free) Box-o-fish"
