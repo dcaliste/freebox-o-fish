@@ -27,6 +27,7 @@ Page {
 
     Column {
         anchors.centerIn: parent
+        width: parent.width
 
         spacing: Theme.paddingLarge
 
@@ -44,13 +45,15 @@ Page {
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
 	    horizontalAlignment: Text.AlignHCenter
+            width: parent.width
             font.pixelSize: Theme.fontSizeExtraSmall
-            text: "Version 0.1\nCopyright © 2014 Damien Caliste"
+            text: "Version 0.1\nCopyright © 2014 Damien Caliste\ncourriel : dcaliste@free.fr"
             color: Theme.secondaryColor
         }
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
 	    horizontalAlignment: Text.AlignHCenter
+            width: parent.width
             font.pixelSize: Theme.fontSizeSmall
             text: "Box-o-fish est un logiciel libre,\n" +
             "publié sous licence\n" +
