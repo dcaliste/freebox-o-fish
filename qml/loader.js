@@ -20,14 +20,22 @@ function getDB() {
                                            "Local storage for Box-o-Fish", 10000);
     return db;
 }
+function createTableUrl(tx) {
+    // Create the database if it doesn't already exist
+    tx.executeSql('CREATE TABLE IF NOT EXISTS FavoriteURL(url TEXT)');
+    tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS IDX_URLS ON FavoriteURL(url)');
+}
+function createTableFreebox(tx) {
+    // Create the database if it doesn't already exist
+    tx.executeSql('CREATE TABLE IF NOT EXISTS Freebox(id TEXT, app_token TEXT, track_id INT, session_token TEXT)');
+    tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS IDX_FREEBOX ON Freebox(id)');
+}
 
 /* Database routines. */
 function setFavoriteURL() {
     var db = getDB();
     db.transaction(function(tx) {
-        // Create the database if it doesn't already exist
-        tx.executeSql('CREATE TABLE IF NOT EXISTS FavoriteURL(url TEXT)');
-        tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS IDX_URLS ON FavoriteURL(url)');
+        createTableUrl(tx);
         var rs = tx.executeSql('INSERT OR REPLACE INTO FavoriteURL VALUES (?)', [url]);
     });
 }
@@ -35,9 +43,10 @@ function setFavoriteURL() {
 function getFavoriteURL() {
     var favoriteURL = [];
     var db = getDB();
+
+    /* Must be synchronous here. */
     db.transaction(function(tx) {
-        // Create the database if it doesn't already exist
-        tx.executeSql('CREATE TABLE IF NOT EXISTS FavoriteURL(url TEXT)');
+        createTableUrl(tx);
         var rs = tx.executeSql('SELECT url FROM FavoriteURL');
         console.log("Found favorite urls" + rs.rows.length)
         if (rs.rows.length > 0)
@@ -53,8 +62,7 @@ function getAppToken() {
     track_id  = 0;
     var db = getDB();
     db.transaction(function(tx) {
-        // Create the database if it doesn't already exist
-        tx.executeSql('CREATE TABLE IF NOT EXISTS Freebox(id TEXT, app_token TEXT, track_id INT)');
+        createTableFreebox(tx);
         var rs = tx.executeSql('SELECT app_token, track_id FROM Freebox WHERE id = ?', [freebox_id, ]);
         if (rs.rows.length > 0) {
             app_token = rs.rows.item(0).app_token;
@@ -66,15 +74,33 @@ function setAppToken(vals) {
     var db = getDB();
     console.log("Set app_token" + vals)
     db.transaction(function(tx) {
-        // Create the database if it doesn't already exist
-        tx.executeSql('CREATE TABLE IF NOT EXISTS Freebox(id TEXT, app_token TEXT, track_id INT)');
-        tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS id_index ON Freebox(id)');
-        var rs = tx.executeSql('INSERT INTO Freebox VALUES (?, ?, ?)', [freebox_id, vals["result"]["app_token"], vals["result"]["track_id"]]);
+        createTableFreebox(tx);
+        var rs = tx.executeSql('INSERT OR REPLACE INTO Freebox VALUES (?, ?, ?, "")', [freebox_id, vals["result"]["app_token"], vals["result"]["track_id"]]);
     });
     app_token = vals["result"]["app_token"];
     track_id  = vals["result"]["track_id"];
 }
 
+function getCachedSessionToken() {
+    /* Must be synchronous here. */
+    var ret = "";
+    var db = getDB();
+    db.transaction(function(tx) {
+        createTableFreebox(tx);
+        var rs = tx.executeSql('SELECT session_token FROM Freebox WHERE id = ?', [freebox_id, ]);
+        if (rs.rows.length > 0) {
+            ret = (rs.rows.item(0).session_token)?rs.rows.item(0).session_token:"";
+        }
+    });
+    return ret;
+}
+function setCachedSessionToken() {
+    var db = getDB();
+    db.transaction(function(tx) {
+        createTableFreebox(tx);
+        tx.executeSql('UPDATE OR REPLACE Freebox SET session_token = ? WHERE id = ?', [session_token, freebox_id]);
+    });
+}
 
 /* HTTP routines. */
 function http(method, url, sendObj, respFunc) {
@@ -94,7 +120,7 @@ function http(method, url, sendObj, respFunc) {
         }
     }
 
-    console.log(method + url);
+    console.log(method + url + sendObj);
     doc.open(method, url);
     if (session_token.length > 0)
         doc.setRequestHeader("X-Fbx-App-Auth", session_token);
@@ -102,7 +128,6 @@ function http(method, url, sendObj, respFunc) {
         doc.send(sendObj);
     else
         doc.send();
-    console.log(sendObj);
 }
 
 function requestAppTokenStatus() {
@@ -194,7 +219,7 @@ g)-899497514);l=g;g=h;h=j<<30|j>>>2;j=n;n=c}b[0]=b[0]+n|0;b[1]=b[1]+j|0;b[2]=b[2
 this._hasher;e=d.finalize(e);d.reset();return d.finalize(this._oKey.clone().concat(e))}})})();
 /* End of CryptoJS. */
 
-function getSessionToken() {
+function requestSessionToken() {
     http("GET", "http://" + url + "/api/v1/login", null,
          function (vals) {
              console.log(vals["result"]["challenge"]);
@@ -204,10 +229,44 @@ function getSessionToken() {
                   function(vals) {
                       if (vals["success"]) {
                           session_token = vals["result"]["session_token"];
+                          setCachedSessionToken();
                           console.log(vals["result"]["permissions"]);
                       }
                   });
          });
+}
+
+function login() {
+    var session = getCachedSessionToken();
+    console.log("Available session token " + session);
+    /* Alreday have a session token, need to validate it. */
+    if (session.length > 0) {
+        var doc = new XMLHttpRequest();
+
+        doc.timeout = 15000;
+        doc.onreadystatechange = function() {
+            if (doc.readyState == XMLHttpRequest.DONE) {
+                var success = false;
+                console.log(doc.status + " " + doc.statusText);
+                //console.log(doc.responseText);
+                if (doc.status == 200) {
+                    var vals = eval("(" + doc.responseText + ")");
+                    success = vals["success"];
+                }
+                if (success)
+                    session_token = session;
+                else
+                    requestSessionToken();
+            }
+        }
+
+        doc.open("GET", "http://" + url + "/api/v1/system/");
+        doc.setRequestHeader("X-Fbx-App-Auth", session);
+        doc.send();
+        return;
+    }
+    /* Ask for a new session token. */
+    requestSessionToken();
 }
 
 function logout() {

@@ -202,5 +202,8 @@ ApplicationWindow {
         id: cover
     }
 
-    onApp_token_statusChanged: if (app_token_status == "granted") {JS.setFavoriteURL(); JS.getSessionToken()}
+    onApp_token_statusChanged: if (app_token_status == "granted") {
+        JS.setFavoriteURL()
+        JS.login()
+    }
 }
