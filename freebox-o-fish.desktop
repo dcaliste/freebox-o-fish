@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=(Free) Box-o-fish
+Name=Box-o-fish
 Icon=freebox-o-fish
 Exec=invoker --type=silica-qt5 sailfish-qml freebox-o-fish
 X-Nemo-Application-Type=silica-qt5

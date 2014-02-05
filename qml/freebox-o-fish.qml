@@ -200,6 +200,42 @@ ApplicationWindow {
 
     CoverBackground {
         id: cover
+        Column {
+            spacing: Theme.paddingSmall
+            width: parent.width - 2*Theme.paddingLarge
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.topMargin: Theme.paddingLarge
+            Item {
+                width: parent.width
+                height: title.height
+                
+                Column {
+                    id: title
+                    width: parent.width
+                    Label {
+                        width: parent.width
+                        color: Theme.highlightColor
+                        font.pixelSize: Theme.fontSizeSmall
+                        truncationMode: TruncationMode.Fade
+                        text: "Freebox"
+                    }
+                    Label {
+                        width: parent.width
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        truncationMode: TruncationMode.Fade
+                        color: Theme.secondaryHighlightColor
+                        text: url
+                    }
+                }
+                Image {
+                    anchors.right: parent.right
+                    anchors.rightMargin: -Theme.paddingSmall
+                    anchors.verticalCenter: parent.verticalCenter
+                    source: "image://theme/icon-m-link"
+                    opacity: (session_token.length > 0)?1.:0.3
+                }
+            }
+        }
     }
 
     onApp_token_statusChanged: if (app_token_status == "granted") {
