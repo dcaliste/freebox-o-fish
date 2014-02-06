@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Box-o-fish
-Icon=freebox-o-fish
-Exec=sailfish-qml freebox-o-fish
+Icon=harbour-freebox-o-fish
+Exec=harbour-freebox-o-fish
 X-Nemo-Application-Type=silica-qt5
 Comment=Compagnon Freebox
