@@ -41,6 +41,18 @@ rm -rf %{buildroot}
 cd tmp
 %qmake5_install
 
+%post
+if [ "$1" = 1 ] ; then
+ if ! grep -qs "harbour-freebox-o-fish" /usr/share/mapplauncherd/privileges ; then
+  echo "/usr/bin/harbour-freebox-o-fish,a" >> /usr/share/mapplauncherd/privileges
+ fi
+fi
+
+%preun
+if [ "$1" = 0 ] ; then
+ sed -i "/harbour-freebox-o-fish/d" /usr/share/mapplauncherd/privileges
+fi
+
 %files
 %defattr(-,root,root,-)
 /usr/share/applications
