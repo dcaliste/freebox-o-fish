@@ -16,6 +16,8 @@ Source: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
 Requires: sailfishsilica-qt5
 Requires: mapplauncherd-booster-silica-qt5
+Requires: nemo-qml-plugin-contacts-qt5
+Requires: sailfish-components-contacts-qt5
 BuildRequires: pkgconfig(qdeclarative5-boostable)
 BuildRequires: pkgconfig(sailfishapp)
 
