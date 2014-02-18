@@ -43,6 +43,24 @@ ApplicationWindow {
     property int track_id: 0
     property string session_token: ""
 
+    ListModel {
+        id: actions
+        ListElement {
+            label: "Appels"
+            iconSource: "image://theme/icon-l-answer"
+            page: "call"
+            allowOffLine: true
+            implemented: true
+        }
+        ListElement {
+            label: "Contacts"
+            iconSource: "image://theme/icon-l-people"
+            page: "contact"
+            allowOffLine: false
+            implemented: false
+        }
+    }
+
     Page {
         id: page
         anchors.fill: parent
@@ -123,21 +141,6 @@ ApplicationWindow {
             id: callPage
             CallPage { }
         }
-        ListModel {
-            id: actions
-            ListElement {
-                label: "Appels"
-                iconSource: "image://theme/icon-l-answer"
-                page: "callPage"
-                implemented: true
-            }
-            ListElement {
-                label: "Contacts"
-                iconSource: "image://theme/icon-l-people"
-                page: "contactPage"
-                implemented: false
-            }
-        }
 
         Component {
             id: aboutPage
@@ -181,7 +184,7 @@ ApplicationWindow {
             delegate: BackgroundItem {
                 width: grid.cellWidth
                 height: grid.cellHeight
-                enabled: (session_token.length > 0 && implemented)
+                enabled: ((session_token.length > 0 || allowOffLine) && implemented)
                 opacity: (enabled)?1:0.33
                 Image {
                     source: iconSource
@@ -193,20 +196,51 @@ ApplicationWindow {
                     anchors.bottom: parent.bottom
                     font.pixelSize: Theme.fontSizeSmall
                 }
-                onClicked:  pageStack.push(eval(model.page))
+                onClicked:  pageStack.push(eval(model.page + "Page"))
             }
         }
     }
 
     CoverBackground {
         id: cover
-        Column {
-            spacing: Theme.paddingSmall
-            width: parent.width - 2*Theme.paddingLarge
+        property int pageId: 0
+
+        CoverActionList {
+            enabled: (actions.count > 1)
+            CoverAction {
+                iconSource: "image://theme/icon-cover-next"
+                onTriggered: {
+                    cover.pageId = (cover.pageId + 1) % actions.count
+                }
+            }
+        }
+
+        Component {
+            id: callCover
+            CallCover { }
+        }
+
+        Component {
+            id: contactCover
+            Label {
+                text: "Contacts\nFreebox\nnon encore\nimplémentés"
+                color: Theme.highlightColor
+                font.pixelSize: Theme.fontSizeMedium
+	        horizontalAlignment: Text.AlignHCenter
+            }
+        }
+
+        Item {
+            width: parent.width - 2*Theme.paddingMedium
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.topMargin: Theme.paddingLarge
+            anchors.top: parent.top
+            anchors.topMargin: Theme.paddingMedium
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Theme.paddingMedium
             Item {
-                width: parent.width
+                id: titleItem
+                width: parent.width - 2*Theme.paddingSmall
+                anchors.horizontalCenter: parent.horizontalCenter
                 height: title.height
                 
                 Column {
@@ -233,6 +267,22 @@ ApplicationWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     source: "image://theme/icon-m-link"
                     opacity: (session_token.length > 0)?1.:0.3
+                }
+            }
+            Item {
+                width: parent.width
+                anchors.top: titleItem.bottom
+                anchors.bottom: parent.bottom
+                anchors.topMargin: Theme.paddingMedium
+                Loader {
+                    id: content
+                    anchors.fill: parent
+                    sourceComponent: eval(actions.get(cover.pageId).page + "Cover")
+                }
+                OpacityRampEffect {
+                    offset: 0.5
+                    direction: 2
+                    sourceItem: content
                 }
             }
         }

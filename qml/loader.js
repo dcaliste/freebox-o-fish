@@ -30,6 +30,15 @@ function createTableFreebox(tx) {
     tx.executeSql('CREATE TABLE IF NOT EXISTS Freebox(id TEXT, app_token TEXT, track_id INT, session_token TEXT)');
     tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS IDX_FREEBOX ON Freebox(id)');
 }
+function createTableCalls(tx) {
+    // Create the database if it doesn't already exist
+    tx.executeSql('CREATE TABLE IF NOT EXISTS Calls(type TEXT, datetime INTEGER, number TEXT, name TEXT, duration INTEGER)');
+    tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS IDX_CALL ON Calls(type, datetime, number)');
+}
+function createTableCachedTimes(tx) {
+    // Create the database if it doesn't already exist
+    tx.executeSql('CREATE TABLE IF NOT EXISTS CachedTimes(type TEXT, datetime INTEGER)');
+}
 
 /* Database routines. */
 function setFavoriteURL() {
@@ -39,7 +48,6 @@ function setFavoriteURL() {
         var rs = tx.executeSql('INSERT OR REPLACE INTO FavoriteURL VALUES (?)', [url]);
     });
 }
-
 function getFavoriteURL() {
     var favoriteURL = [];
     var db = getDB();
@@ -99,6 +107,55 @@ function setCachedSessionToken() {
     db.transaction(function(tx) {
         createTableFreebox(tx);
         tx.executeSql('UPDATE OR REPLACE Freebox SET session_token = ? WHERE id = ?', [session_token, freebox_id]);
+    });
+}
+
+function setCachedCalls(calls) {
+    var db = getDB();
+    db.transaction(function(tx) {
+        /* Add new entries to the table. */
+        createTableCalls(tx);
+        for (var i = 0; i < calls.length; i++)
+            tx.executeSql('INSERT OR IGNORE INTO Calls VALUES (?, ?, ?, ?, ?)',
+                          [calls[i]["type"], calls[i]["datetime"],
+                           calls[i]["number"], calls[i]["name"],
+                           calls[i]["duration"]]);
+        /* Update the refresh stamp. */
+        var now = new Date();
+        createTableCachedTimes(tx);
+        tx.executeSql('INSERT OR REPLACE INTO CachedTimes VALUES (?, ?)',
+                      ["Calls", Math.round(now.getTime() / 1000)]);
+    });
+}
+function getCachedCalls(model, lastNDays) {
+    model.clear()
+    var fromStamp
+    fromStamp = null;
+    if (lastNDays > 0) {
+        var fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - lastNDays);
+        fromDate.setHours(0, 0, 0, 0);
+        fromStamp = Math.round(fromDate.getTime() / 1000);
+    }
+    var db = getDB();
+    db.transaction(function(tx) {
+        /* Fetch the last N calls. */
+        createTableCalls(tx);
+        if (fromStamp) {
+            var rs = tx.executeSql('SELECT * FROM Calls WHERE datetime > ? ORDER BY datetime DESC', [fromStamp, ]); }
+        else {
+            var rs = tx.executeSql('SELECT * FROM Calls ORDER BY datetime DESC'); }
+        for (var i = 0; i < rs.rows.length; i++) {
+            var cpy = Object(rs.rows.item(i));
+            var dateTime = new Date(cpy["datetime"] * 1000);
+            cpy.section = Format.formatDate(dateTime, Formatter.TimepointSectionRelative);
+            model.append(cpy);
+        }
+        /* Fetch the refresh value. */
+        createTableCachedTimes(tx);
+        var rs = tx.executeSql('SELECT datetime FROM CachedTimes WHERE type = ?', ["Calls", ]);
+        if (rs.rows.length > 0)
+            refresh = new Date(rs.rows[0].datetime * 1000);
     });
 }
 
@@ -280,16 +337,13 @@ function logout() {
          });
 }
 
-function getCallLog(model) {
-    model.clear()
+function requestCallLog(model, lastNDays) {
     http("GET", "http://" + url + "/api/v1/call/log/", null,
          function (vals) {
-             if (vals["success"])
-                 for (var i = 0; i < vals["result"].length; i++) {
-                     var dateTime = new Date(vals["result"][i]["datetime"] * 1000);
-                     vals["result"][i]["section"] = Format.formatDate(dateTime, Formatter.TimepointSectionRelative);
-                     model.append(vals["result"][i]);
-                 }
+             if (vals["success"]) {
+                 setCachedCalls(vals["result"]);
+                 getCachedCalls(model, lastNDays);
+             }
          });
 }
 
