@@ -51,7 +51,7 @@ Page {
 	    horizontalAlignment: Text.AlignHCenter
             width: parent.width
             font.pixelSize: Theme.fontSizeExtraSmall
-            text: "Version 0.1\nCopyright © 2014 Damien Caliste\ncourriel : dcaliste@free.fr"
+            text: "Version 0.2\nCopyright © 2014 Damien Caliste\ncourriel : dcaliste@free.fr"
             color: Theme.secondaryColor
         }
         Label {
