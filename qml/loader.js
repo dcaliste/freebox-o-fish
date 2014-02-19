@@ -35,9 +35,10 @@ function createTableCalls(tx) {
     tx.executeSql('CREATE TABLE IF NOT EXISTS Calls(type TEXT, datetime INTEGER, number TEXT, name TEXT, duration INTEGER)');
     tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS IDX_CALL ON Calls(type, datetime, number)');
 }
-function createTableCachedTimes(tx) {
+function createTableCacheTimes(tx) {
     // Create the database if it doesn't already exist
-    tx.executeSql('CREATE TABLE IF NOT EXISTS CachedTimes(type TEXT, datetime INTEGER)');
+    tx.executeSql('CREATE TABLE IF NOT EXISTS CacheTimes(type TEXT, datetime INTEGER)');
+    tx.executeSql('CREATE UNIQUE INDEX IF NOT EXISTS IDX_CACHE ON CacheTimes(type)');
 }
 
 /* Database routines. */
@@ -122,8 +123,8 @@ function setCachedCalls(calls) {
                            calls[i]["duration"]]);
         /* Update the refresh stamp. */
         var now = new Date();
-        createTableCachedTimes(tx);
-        tx.executeSql('INSERT OR REPLACE INTO CachedTimes VALUES (?, ?)',
+        createTableCacheTimes(tx);
+        tx.executeSql('INSERT OR REPLACE INTO CacheTimes VALUES (?, ?)',
                       ["Calls", Math.round(now.getTime() / 1000)]);
     });
 }
@@ -152,8 +153,8 @@ function getCachedCalls(model, lastNDays) {
             model.append(cpy);
         }
         /* Fetch the refresh value. */
-        createTableCachedTimes(tx);
-        var rs = tx.executeSql('SELECT datetime FROM CachedTimes WHERE type = ?', ["Calls", ]);
+        createTableCacheTimes(tx);
+        var rs = tx.executeSql('SELECT datetime FROM CacheTimes WHERE type = ?', ["Calls", ]);
         if (rs.rows.length > 0)
             refresh = new Date(rs.rows[0].datetime * 1000);
     });
