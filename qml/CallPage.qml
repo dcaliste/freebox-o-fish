@@ -54,23 +54,6 @@ Page {
 	searchableProperty: PeopleModel.FetchPhoneNumber
     }
 
-    ListModel {
-        id: callLog
-    /*ListElement {
-      number: "0233666597"
-      type: "outgoing"
-      }
-      ListElement {
-      number: "0476124578"
-      name: "MAXIME"
-      type: "missed"
-      }
-      ListElement {
-      number: "+84123456789"
-      type: "incoming"
-      }*/
-    }
-
     Image {
         // used to determine the icon width to align everything
         id: callIcons

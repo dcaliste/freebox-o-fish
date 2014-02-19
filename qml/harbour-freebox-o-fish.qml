@@ -61,6 +61,10 @@ ApplicationWindow {
         }
     }
 
+    ListModel {
+        id: callLog
+    }
+
     Page {
         id: page
         anchors.fill: parent
@@ -182,6 +186,7 @@ ApplicationWindow {
             }
 
             delegate: BackgroundItem {
+                id: item
                 width: grid.cellWidth
                 height: grid.cellHeight
                 enabled: ((session_token.length > 0 || allowOffLine) && implemented)
@@ -192,8 +197,10 @@ ApplicationWindow {
                 }
                 Label {
                     text: label
+                    color: (item.highlighted) ? Theme.highlightColor : Theme.primaryColor
 	            anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Theme.paddingSmall
                     font.pixelSize: Theme.fontSizeSmall
                 }
                 onClicked:  pageStack.push(eval(model.page + "Page"))

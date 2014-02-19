@@ -16,9 +16,9 @@
  */
 
 import QtQuick 2.0
+import Sailfish.Silica 1.0
 import QtQuick.LocalStorage 2.0
 import "loader.js" as JS
-import Sailfish.Silica 1.0
 import org.nemomobile.contacts 1.0
 
 ListView {
@@ -26,10 +26,7 @@ ListView {
     property int iconWidth: callIcons.width - 2 * Theme.paddingSmall
 
     clip: true
-    model: ListModel {
-        id: callLog
-        Component.onCompleted: JS.getCachedCalls(callLog, 0)
-        }
+    model: callLog
     interactive: false
     visible: count > 0
 
@@ -85,4 +82,8 @@ ListView {
             }*/
         }
     }
+
+    Component.onCompleted: if (session_token.length > 0) {
+        JS.requestCallLog(callLog, 2) } else {
+        JS.getCachedCalls(callLog, 2) }
 }
