@@ -9,7 +9,7 @@
 Name: harbour-freebox-o-fish
 
 Summary: A Freebox compagnon
-Version: 0.2
+Version: 0.2.1
 Release: 1
 License: GPLv3
 Source: %{name}-%{version}.tar.gz
@@ -61,6 +61,10 @@ fi
 /usr/bin
 
 %changelog
+* Wed Feb 19 2014 - Damien Caliste <dcaliste@free.fr> 0.2.1-1
+- use a shared model for call page and call cover, so cover is properly updated.
+- correct an issue with the date of last refresh.
+
 * Tue Feb 18 2014 - Damien Caliste <dcaliste@free.fr> 0.2-1
 - add off-line storage of the Freebox call list.
 - add an cover displaying the call list.
