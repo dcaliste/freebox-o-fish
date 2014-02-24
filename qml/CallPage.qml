@@ -61,6 +61,10 @@ Page {
         source: "image://theme/icon-m-missed-call"
     }
 
+    Formatter {
+        id: formatter
+    }
+
     SilicaListView {
         id: call_list
         header: Column {
@@ -70,10 +74,15 @@ Page {
                 title: "Liste des appels"
             }
             Label {
+                function timestamp() {
+                    var ref = new Date(refresh)
+                    var moment = formatter.formatDate(ref, Formatter.TimepointRelative)
+                    var elapsed = formatter.formatDate(ref, Formatter.DurationElapsed)
+                    return "Liste établie " + elapsed + " (" + moment + ")"
+                }
                 width: parent.width
                 color: Theme.secondaryColor
-                text: "Liste établie " + Qt.formatDateTime(new Date(refresh),
-                                                           "le dd/MM à hh:mm") 
+                text: timestamp()
             }
         }
         PullDownMenu {
@@ -134,24 +143,27 @@ Page {
                     Label {
                         color: listItem.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
                         font.pixelSize: Theme.fontSizeSmall
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.paddingLarge
                         text: model.number
                         visible: (model.number.length > 0 && (contact || model.number != model.name))
                     }
                 }
+            }
+            Column {
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
                 Label {
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.right: parent.right
                     color: listItem.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
                     font.pixelSize: Theme.fontSizeExtraSmall
                     text: "( " + JS.duration(model.duration) + " )"
                 }
-            }
-            Label {
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                color: listItem.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
-                text: Qt.formatDateTime(new Date(model.datetime * 1000), "le dd/MM à hh:mm")
+                Label {
+                    color: listItem.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    text: Qt.formatDateTime(new Date(model.datetime * 1000), "le dd/MM à hh:mm")
+                }
             }
             onClicked: if (model.number) openContactCard(contact, model.number)
         }
