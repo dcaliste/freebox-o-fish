@@ -156,7 +156,7 @@ function getCachedCalls(model, lastNDays) {
         createTableCacheTimes(tx);
         var rs = tx.executeSql('SELECT datetime FROM CacheTimes WHERE type = ?', ["Calls", ]);
         if (rs.rows.length > 0)
-            refresh = new Date(rs.rows[0].datetime * 1000);
+            callLog.refresh = new Date(rs.rows[0].datetime * 1000);
     });
 }
 
@@ -212,7 +212,7 @@ function appTokenConnect() {
     httpLabel = "connexion"
     http("GET", "http://" + url + "/api_version", null,
          function(vals) {
-             if (!vals["success"])
+             if (!vals["uid"])
                  return;
              freebox_id = vals["uid"];
              getAppToken();

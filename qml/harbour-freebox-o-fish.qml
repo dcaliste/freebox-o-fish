@@ -48,12 +48,17 @@ ApplicationWindow {
 
     ListModel {
         id: actions
+        function refresh(id) {
+            var func = actions.get(id).refreshFunc
+            if (func.length > 0) eval(func)
+        }
         ListElement {
             label: "Appels"
             iconSource: "image://theme/icon-l-answer"
             page: "call"
             allowOffLine: true
             implemented: true
+            refreshFunc: "JS.requestCallLog(callLog, 3)"
         }
         ListElement {
             label: "Contacts"
@@ -61,11 +66,13 @@ ApplicationWindow {
             page: "contact"
             allowOffLine: false
             implemented: false
+            refreshFunc: ""
         }
     }
 
     ListModel {
         id: callLog
+        property variant refresh: Date()
     }
 
     Page {
@@ -219,7 +226,18 @@ ApplicationWindow {
         property int pageId: 0
 
         CoverActionList {
-            enabled: (actions.count > 1)
+            enabled: (session_token.length > 0)
+            CoverAction {
+                iconSource: "image://theme/icon-cover-next"
+                onTriggered: cover.pageId = (cover.pageId + 1) % actions.count
+            }
+            CoverAction {
+                iconSource: "image://theme/icon-cover-refresh"
+                onTriggered: actions.refresh(cover.pageId)
+            }
+        }
+        CoverActionList {
+            enabled: (session_token.length == 0)
             CoverAction {
                 iconSource: "image://theme/icon-cover-next"
                 onTriggered: {

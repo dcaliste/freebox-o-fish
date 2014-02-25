@@ -26,7 +26,6 @@ Page {
     id: page
     anchors.fill: parent
 
-    property variant refresh: Date()
     property int lastNDays: 0
     property int iconWidth: callIcons.width - 2 * Theme.paddingSmall
 
@@ -75,7 +74,7 @@ Page {
             }
             Label {
                 function timestamp() {
-                    var ref = new Date(refresh)
+                    var ref = new Date(callLog.refresh)
                     var moment = formatter.formatDate(ref, Formatter.TimepointRelative)
                     var elapsed = formatter.formatDate(ref, Formatter.DurationElapsed)
                     return "Liste établie " + elapsed + " (" + moment + ")"
