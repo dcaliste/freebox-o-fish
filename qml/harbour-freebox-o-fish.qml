@@ -29,7 +29,6 @@ ApplicationWindow {
 
     /* Can be:
        - unknown
-       - fetching
        - error
        - denied_from_external_ip
        - timeout
@@ -42,6 +41,10 @@ ApplicationWindow {
     property string app_token: ""
     property int track_id: 0
     property string session_token: ""
+
+    /* Current HTTP request hook, and label. */
+    property var httpRequest: null
+    property string httpLabel: ""
 
     ListModel {
         id: actions
@@ -118,14 +121,15 @@ ApplicationWindow {
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "se connecter"
-                enabled: (app_token_status == "unknown" || JS.appTokenIsError())
+                enabled: ((app_token_status == "unknown" || JS.appTokenIsError()) &&
+                          (httpRequest == null))
                 visible: (session_token.length == 0)
                 onClicked: JS.appTokenConnect()
             }
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "se déconnecter"
-                enabled: (app_token_status == "granted")
+                enabled: (app_token_status == "granted" && (httpRequest == null))
                 visible: (session_token.length > 0)
                 onClicked: JS.logout()
             }
@@ -171,16 +175,16 @@ ApplicationWindow {
 		    text: "À propos"
 		    onClicked: pageStack.push(aboutPage)
 	        }
+                MenuItem {
+                    visible: (httpRequest != null)
+                    text: "Annuler la requète réseau"
+                    onClicked: if (httpRequest != null) { httpRequest.abort() }
+                }
 	    }
 
-	    BusyIndicator {
-	   	id: busy
-                visible: ((session_token.length == 0 &&
-                           (app_token_status == "pending" ||
-                            app_token_status == "granted")) ||
-                          app_token_status == "fetching")
-                running: visible
-                size: BusyIndicatorSize.Large
+            NetworkIndicator {
+                visible: (httpRequest != null)
+                label: httpLabel
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.horizontalCenter: parent.horizontalCenter
             }
@@ -206,6 +210,8 @@ ApplicationWindow {
                 onClicked:  pageStack.push(eval(model.page + "Page"))
             }
         }
+
+        
     }
 
     CoverBackground {

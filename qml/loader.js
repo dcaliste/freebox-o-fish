@@ -167,13 +167,17 @@ function http(method, url, sendObj, respFunc) {
     doc.timeout = 15000;
     doc.onreadystatechange = function() {
         if (doc.readyState == XMLHttpRequest.DONE) {
-            console.log(doc.status + " " + doc.statusText);
-            //console.log(doc.responseText);
+            var httpRequestOld = httpRequest;
+            console.log("status " + doc.status + " " + doc.statusText);
             if (doc.status == 200 && respFunc) {
 	        console.log(doc.responseText);
                 respFunc(eval("(" + doc.responseText + ")"));
             } else if (respFunc) {
                 respFunc({"success": false, "error_code": doc.status})
+            }
+            if (httpRequest == httpRequestOld) {
+                /* The request is finished, we remove the hook. */
+                httpRequest = null;
             }
         }
     }
@@ -182,6 +186,9 @@ function http(method, url, sendObj, respFunc) {
     doc.open(method, url);
     if (session_token.length > 0)
         doc.setRequestHeader("X-Fbx-App-Auth", session_token);
+
+    /* Keep an hook on the request with a global variable. */
+    httpRequest = doc;
     if (sendObj)
         doc.send(sendObj);
     else
@@ -189,6 +196,7 @@ function http(method, url, sendObj, respFunc) {
 }
 
 function requestAppTokenStatus() {
+    httpLabel = "attente autorisation"
     http("GET", "http://" + url + "/api/v1/login/authorize/" + track_id, null,
          function(vals) {
 	     if (!vals["success"] && vals["error_code"] == "denied_from_external_ip")
@@ -201,9 +209,11 @@ function requestAppTokenStatus() {
 }
 
 function appTokenConnect() {
-    app_token_status = "fetching"
+    httpLabel = "connexion"
     http("GET", "http://" + url + "/api_version", null,
          function(vals) {
+             if (!vals["success"])
+                 return;
              freebox_id = vals["uid"];
              getAppToken();
              if (track_id == 0) {
@@ -278,6 +288,7 @@ this._hasher;e=d.finalize(e);d.reset();return d.finalize(this._oKey.clone().conc
 /* End of CryptoJS. */
 
 function requestSessionToken() {
+    httpLabel = "demande de session"
     http("GET", "http://" + url + "/api/v1/login", null,
          function (vals) {
              console.log(vals["result"]["challenge"]);
@@ -330,7 +341,7 @@ function login() {
 function logout() {
     if (session_token.length ==0)
         return;
-    app_token_status = "fetching"
+    httpLabel = "déconnexion"
     http("POST", "http://" + url + "/api/v1/login/logout/", null,
          function (vals) {
              session_token = "";
@@ -339,6 +350,7 @@ function logout() {
 }
 
 function requestCallLog(model, lastNDays) {
+    httpLabel = "téléchargement"
     http("GET", "http://" + url + "/api/v1/call/log/", null,
          function (vals) {
              if (vals["success"]) {

@@ -86,10 +86,16 @@ Page {
             }
         }
         PullDownMenu {
-            visible: session_token.length > 0
+            visible: (httpRequest != null) || (session_token.length > 0)
             MenuItem {
+                visible: session_token.length > 0
                 text: "Rafraîchir la liste"
-                onClicked: JS.getCachedCalls(callLog, lastNDays)
+                onClicked: JS.requestCallLog(callLog, lastNDays)
+            }
+            MenuItem {
+                visible: (httpRequest != null)
+                text: "Annuler la requète réseau"
+                onClicked: if (httpRequest != null) { httpRequest.abort() }
             }
         }
 
@@ -107,11 +113,9 @@ Page {
             }
         }
 
-	BusyIndicator {
-	    id: busy
-            visible: (callLog.count == 0)
-            running: visible
-            size: BusyIndicatorSize.Large
+        NetworkIndicator {
+            visible: (httpRequest != null)
+            label: httpLabel
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
         }
