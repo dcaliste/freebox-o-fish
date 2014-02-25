@@ -43,7 +43,7 @@ ListView {
         visible: false
         source: "image://theme/icon-m-missed-call"
     }
-    
+
     delegate: ListItem {
 	property Person contact: (model.number && people.populated)?people.personByPhoneNumber(model.number):null
 

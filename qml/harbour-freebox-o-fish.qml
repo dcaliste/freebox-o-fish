@@ -304,7 +304,7 @@ ApplicationWindow {
                 width: parent.width
                 anchors.top: titleItem.bottom
                 anchors.bottom: parent.bottom
-                anchors.topMargin: Theme.paddingMedium
+                anchors.topMargin: Theme.paddingSmall
                 Loader {
                     id: content
                     anchors.fill: parent
@@ -317,6 +317,15 @@ ApplicationWindow {
                 }
             }
         }
+        Label {
+            id: lastupdate
+            visible: actions.get(cover.pageId).refreshFunc.length > 0
+            anchors.bottom: parent.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Theme.secondaryColor
+            text: Qt.formatDateTime(new Date(eval(actions.get(cover.pageId).page + "Log.refresh")), "le dd/MM à hh:mm")
+            font.pixelSize: Theme.fontSizeExtraSmall
+        }            
     }
 
     onApp_token_statusChanged: if (app_token_status == "granted") {
