@@ -58,7 +58,7 @@ ApplicationWindow {
             page: "call"
             allowOffLine: true
             implemented: true
-            refreshFunc: "JS.requestCallLog(callLog, 3)"
+            refreshFunc: "JS.requestCallLog()"
         }
         ListElement {
             label: "Contacts"
@@ -72,7 +72,9 @@ ApplicationWindow {
 
     ListModel {
         id: callLog
-        property variant refresh: Date()
+        property variant refresh
+        property int lastNDays: 0
+        Component.onCompleted: JS.getCachedCalls(callLog, callLog.lastNDays)
     }
 
     Page {

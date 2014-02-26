@@ -82,8 +82,4 @@ ListView {
             }*/
         }
     }
-
-    Component.onCompleted: if (session_token.length > 0) {
-        JS.requestCallLog(callLog, 3) } else {
-        JS.getCachedCalls(callLog, 3) }
 }

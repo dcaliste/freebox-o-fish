@@ -26,7 +26,6 @@ Page {
     id: page
     anchors.fill: parent
 
-    property int lastNDays: 0
     property int iconWidth: callIcons.width - 2 * Theme.paddingSmall
 
     /* These lines are copied from voice-ui-jolla. */
@@ -89,7 +88,7 @@ Page {
             MenuItem {
                 visible: session_token.length > 0
                 text: "Rafraîchir la liste"
-                onClicked: JS.requestCallLog(callLog, lastNDays)
+                onClicked: JS.requestCallLog()
             }
             MenuItem {
                 visible: (httpRequest != null)
@@ -174,6 +173,6 @@ Page {
     }
 
     Component.onCompleted: if (session_token.length > 0) {
-        JS.requestCallLog(callLog, lastNDays) } else {
-        JS.getCachedCalls(callLog, lastNDays) }
+        JS.requestCallLog() } else {
+        JS.getCachedCalls(callLog, callLog.lastNDays) }
 }

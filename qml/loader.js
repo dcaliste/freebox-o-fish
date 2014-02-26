@@ -112,6 +112,7 @@ function setCachedSessionToken() {
 }
 
 function setCachedCalls(calls) {
+    console.log("Save call log to cache.");
     var db = getDB();
     db.transaction(function(tx) {
         /* Add new entries to the table. */
@@ -129,6 +130,7 @@ function setCachedCalls(calls) {
     });
 }
 function getCachedCalls(model, lastNDays) {
+    console.log("Load call log from cache.");
     model.clear()
     var fromStamp
     fromStamp = null;
@@ -156,12 +158,12 @@ function getCachedCalls(model, lastNDays) {
         createTableCacheTimes(tx);
         var rs = tx.executeSql('SELECT datetime FROM CacheTimes WHERE type = ?', ["Calls", ]);
         if (rs.rows.length > 0)
-            callLog.refresh = new Date(rs.rows[0].datetime * 1000);
+            model.refresh = new Date(rs.rows[0].datetime * 1000);
     });
 }
 
 /* HTTP routines. */
-function http(method, url, sendObj, respFunc) {
+function http(method, url, sendObj, respFunc, local_session) {
     var doc = new XMLHttpRequest();
 
     doc.timeout = 15000;
@@ -186,6 +188,8 @@ function http(method, url, sendObj, respFunc) {
     doc.open(method, url);
     if (session_token.length > 0)
         doc.setRequestHeader("X-Fbx-App-Auth", session_token);
+    if (local_session)
+        doc.setRequestHeader("X-Fbx-App-Auth", local_session);
 
     /* Keep an hook on the request with a global variable. */
     httpRequest = doc;
@@ -287,10 +291,13 @@ g)-899497514);l=g;g=h;h=j<<30|j>>>2;j=n;n=c}b[0]=b[0]+n|0;b[1]=b[1]+j|0;b[2]=b[2
 this._hasher;e=d.finalize(e);d.reset();return d.finalize(this._oKey.clone().concat(e))}})})();
 /* End of CryptoJS. */
 
-function requestSessionToken() {
+function requestSessionToken(actionFunc) {
     httpLabel = "demande de session"
     http("GET", "http://" + url + "/api/v1/login", null,
          function (vals) {
+             if (!vals["success"]) {
+                 return;
+             }
              console.log(vals["result"]["challenge"]);
              var passwd = CryptoJS.HmacSHA1(vals["result"]["challenge"], app_token);
              var obj = '{"app_id": "fr.freebox.box-o-fish", "password": "' + passwd + '"}';
@@ -299,9 +306,10 @@ function requestSessionToken() {
                       if (vals["success"]) {
                           session_token = vals["result"]["session_token"];
                           setCachedSessionToken();
-                          console.log(vals["result"]["permissions"]);
+                          if (actionFunc)
+                              actionFunc();
                       }
-                  });
+                  });    
          });
 }
 
@@ -310,28 +318,14 @@ function login() {
     console.log("Available session token " + session);
     /* Alreday have a session token, need to validate it. */
     if (session.length > 0) {
-        var doc = new XMLHttpRequest();
-
-        doc.timeout = 15000;
-        doc.onreadystatechange = function() {
-            if (doc.readyState == XMLHttpRequest.DONE) {
-                var success = false;
-                console.log(doc.status + " " + doc.statusText);
-                //console.log(doc.responseText);
-                if (doc.status == 200) {
-                    var vals = eval("(" + doc.responseText + ")");
-                    success = vals["success"];
-                }
-                if (success)
-                    session_token = session;
-                else
-                    requestSessionToken();
-            }
-        }
-
-        doc.open("GET", "http://" + url + "/api/v1/system/");
-        doc.setRequestHeader("X-Fbx-App-Auth", session);
-        doc.send();
+        httpLabel = "vérification de la session"
+        http("GET", "http://" + url + "/api/v1/system/", null, 
+             function(vals) {
+                 if (vals["success"])
+                     session_token = session;
+                 else
+                     requestSessionToken();
+             }, session);
         return;
     }
     /* Ask for a new session token. */
@@ -349,13 +343,18 @@ function logout() {
          });
 }
 
-function requestCallLog(model, lastNDays) {
+function requestCallLog() {
     httpLabel = "téléchargement"
     http("GET", "http://" + url + "/api/v1/call/log/", null,
          function (vals) {
              if (vals["success"]) {
                  setCachedCalls(vals["result"]);
-                 getCachedCalls(model, lastNDays);
+                 getCachedCalls(callLog, callLog.lastNDays);
+             }
+             else {
+                 // Disconnected session, try to aquire it again.
+                 session_token = "";
+                 requestSessionToken(requestCallLog);
              }
          });
 }
