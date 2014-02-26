@@ -9,7 +9,7 @@
 Name: harbour-freebox-o-fish
 
 Summary: A Freebox compagnon
-Version: 0.2.1
+Version: 0.3
 Release: 1
 License: GPLv3
 Source: %{name}-%{version}.tar.gz
@@ -61,6 +61,9 @@ fi
 /usr/bin
 
 %changelog
+* Tue Feb 25 2014 - Damien Caliste <dcaliste@free.fr> 0.3-1
+- add a way to cancel current network request.
+
 * Wed Feb 19 2014 - Damien Caliste <dcaliste@free.fr> 0.2.1-1
 - use a shared model for call page and call cover, so cover is properly updated.
 - correct an issue with the date of last refresh.

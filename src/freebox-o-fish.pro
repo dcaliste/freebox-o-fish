@@ -25,7 +25,7 @@ icon.path = $$PREFIX/share/icons/hicolor/86x86/apps
 icon.files = ../harbour-freebox-o-fish.png
 
 qml.path = $$DEPLOYMENT_PATH/qml
-qml.files = ../qml/harbour-freebox-o-fish.qml ../qml/About.qml ../qml/CallPage.qml ../qml/loader.js ../qml/CallCover.qml
+qml.files = ../qml/harbour-freebox-o-fish.qml ../qml/About.qml ../qml/CallPage.qml ../qml/loader.js ../qml/CallCover.qml ../qml/NetworkIndicator.qml
 
 resources.path = $$DEPLOYMENT_PATH
 resources.files = ../about-freebox-o-fish.png
