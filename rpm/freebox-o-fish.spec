@@ -9,7 +9,7 @@
 Name: harbour-freebox-o-fish
 
 Summary: A Freebox compagnon
-Version: 0.3
+Version: 0.3.1
 Release: 1
 License: GPLv3
 Source: %{name}-%{version}.tar.gz
@@ -61,6 +61,9 @@ fi
 /usr/bin
 
 %changelog
+* Fri Mar 21 2014 - Damien Caliste <dcaliste@free.fr> 0.3.1-1
+- update phone number presentation when there is no saved contact associated to use 1.0.4.20 new method.
+
 * Tue Feb 25 2014 - Damien Caliste <dcaliste@free.fr> 0.3-1
 - add a way to cancel current network request.
 

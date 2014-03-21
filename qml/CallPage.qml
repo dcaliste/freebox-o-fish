@@ -39,7 +39,11 @@ Page {
 
     function openContactCard(person, remoteUid) {
         if (!person) {
-            temporaryPerson.phoneNumbers = [ remoteUid ]
+            temporaryPerson.phoneDetails = [ {
+                                                 'type': Person.PhoneNumberType,
+                                                 'number': remoteUid,
+                                                 'index': -1
+                                             } ]
         }
         pageStack.push(contactCardPageComponent, { 'contact': (person ? person : temporaryPerson) })
     }
